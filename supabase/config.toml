@@ -1,0 +1,4 @@
+project_id = "kkmwccajoikachizluzb"
+
+[functions.emotional-chat]
+verify_jwt = true
