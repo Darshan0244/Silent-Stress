@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import Auth from "@/components/Auth";
+import Landing from "@/components/Landing";
 import Dashboard from "@/components/Dashboard";
 import { Loader2 } from "lucide-react";
 
@@ -31,7 +31,7 @@ const Index = () => {
     );
   }
 
-  return session ? <Dashboard /> : <Auth />;
+  return session ? <Dashboard /> : <Landing />;
 };
 
 export default Index;

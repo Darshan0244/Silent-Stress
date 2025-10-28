@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Send, Loader2, Heart } from "lucide-react";
+import { Send, Loader2, Heart, Volume2, VolumeX } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 interface Message {
   id: string;
@@ -27,6 +28,7 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
   const [loadingMessages, setLoadingMessages] = useState(true);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { speak, stop, isSpeaking } = useTextToSpeech();
 
   useEffect(() => {
     loadMessages();
@@ -205,7 +207,29 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
                   : `mr-auto max-w-[80%] ${getSentimentColor(message.sentiment_label)}`
               } shadow-card border transition-all duration-300`}
             >
-              <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="whitespace-pre-wrap leading-relaxed flex-1">{message.content}</p>
+                {message.role === "assistant" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    onClick={() => {
+                      if (isSpeaking) {
+                        stop();
+                      } else {
+                        speak(message.content);
+                      }
+                    }}
+                  >
+                    {isSpeaking ? (
+                      <VolumeX className="h-4 w-4" />
+                    ) : (
+                      <Volume2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              </div>
             </Card>
           ))}
           <div ref={scrollRef} />
