@@ -5,7 +5,7 @@ export default function Footer() {
 
   return (
     <footer className="border-t bg-card/95 backdrop-blur-sm mt-auto">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-calm flex items-center justify-center">

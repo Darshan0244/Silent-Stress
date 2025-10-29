@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Heart, LogOut, Plus, MessageSquare, Activity, Menu, X, Pencil, Check, Volume2, VolumeX, FileText, Loader2 } from "lucide-react";
+import { Heart, LogOut, Plus, MessageSquare, Menu, Pencil, Check, Volume2, VolumeX, FileText, Loader2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import ChatInterface from "./ChatInterface";
-import QuickActions from "./QuickActions";
 import Footer from "./Footer";
 
 interface Conversation {
@@ -21,7 +20,6 @@ export default function Dashboard() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showQuickActions, setShowQuickActions] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -181,23 +179,10 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">Wellness Companion</p>
           </div>
         </div>
-        <div className="space-y-2">
-          <Button onClick={createNewConversation} className="w-full shadow-soft">
-            <Plus className="w-4 h-4 mr-2" />
-            New Conversation
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setShowQuickActions(true);
-              setMobileMenuOpen(false);
-            }}
-            className="w-full"
-          >
-            <Activity className="w-4 h-4 mr-2" />
-            Quick Actions
-          </Button>
-        </div>
+        <Button onClick={createNewConversation} className="w-full shadow-soft">
+          <Plus className="w-4 h-4 mr-2" />
+          New Conversation
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
@@ -302,14 +287,10 @@ export default function Dashboard() {
         </div>
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {showQuickActions ? (
-            <div className="flex-1 overflow-y-auto">
-              <QuickActions onClose={() => setShowQuickActions(false)} />
-            </div>
-          ) : currentConversation ? (
-            <>
-              {/* Chat Header */}
-              <div className="border-b bg-card/50 backdrop-blur-sm p-3 flex justify-between items-center">
+          {currentConversation ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Chat Header - Always Visible */}
+              <div className="border-b bg-card/50 backdrop-blur-sm p-3 flex justify-between items-center flex-shrink-0 z-10">
                 <h2 className="font-semibold truncate">
                   {conversations.find((c) => c.id === currentConversation)?.title}
                 </h2>
@@ -334,7 +315,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <ChatInterface conversationId={currentConversation} />
-            </>
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center p-4">
               <div className="text-center max-w-md">
@@ -353,7 +334,12 @@ export default function Dashboard() {
         </div>
       </div>
       
-      <Footer />
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
+      <div className="lg:hidden">
+        <Footer />
+      </div>
     </div>
   );
 }

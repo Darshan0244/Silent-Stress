@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, MessageSquare, TrendingUp, Shield, Sparkles, Brain } from "lucide-react";
+import { Heart, MessageSquare, TrendingUp, Shield, Sparkles, Brain, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import Auth from "./Auth";
 import Footer from "./Footer";
 
 export default function Landing() {
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const { theme, setTheme } = useTheme();
 
   if (showAuth) {
     return (
@@ -30,17 +32,35 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
+      {/* Glow Effect Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/30 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-calm/20 rounded-full blur-[120px] animate-pulse delay-1000" />
+      </div>
+      
       {/* Hero Section */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-card/50 backdrop-blur-md sticky top-0 z-50 shadow-soft">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-calm flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-calm flex items-center justify-center shadow-glow">
               <Heart className="w-5 h-5 text-primary-foreground" />
             </div>
             <h1 className="text-xl font-bold">The Silent Stress</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="hover:scale-110 transition-transform"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
             <Button
               variant="ghost"
               onClick={() => {
@@ -56,7 +76,7 @@ export default function Landing() {
                 setAuthMode("signup");
                 setShowAuth(true);
               }}
-              className="shadow-soft"
+              className="shadow-glow bg-gradient-calm hover:shadow-card transition-all"
             >
               Get Started
             </Button>
@@ -65,29 +85,29 @@ export default function Landing() {
       </header>
 
       {/* Hero Content */}
-      <section className="container mx-auto px-4 py-16 md:py-24 text-center">
+      <section className="container mx-auto px-4 py-16 md:py-24 text-center relative z-10">
         <div className="max-w-3xl mx-auto space-y-6">
-          <h2 className="text-4xl md:text-6xl font-bold leading-tight">
+          <h2 className="text-4xl md:text-6xl font-bold leading-tight animate-fade-in">
             Your AI-Powered
             <br />
-            <span className="bg-gradient-calm bg-clip-text text-transparent">
+            <span className="bg-gradient-calm bg-clip-text text-transparent drop-shadow-glow">
               Emotional Wellness
             </span>
             <br />
             Companion
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-in">
             Mental health rarely speaks loudly. The Silent Stress detects emotional patterns
             through AI, offering support before you even realize you need it.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 animate-fade-in">
             <Button
               size="lg"
               onClick={() => {
                 setAuthMode("signup");
                 setShowAuth(true);
               }}
-              className="shadow-soft text-lg px-8"
+              className="shadow-glow bg-gradient-calm hover:shadow-card transition-all text-lg px-8 hover:scale-105"
             >
               Start Your Journey
             </Button>
@@ -97,6 +117,7 @@ export default function Landing() {
               onClick={() => {
                 document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
               }}
+              className="hover:scale-105 transition-transform border-2"
             >
               Learn More
             </Button>
@@ -105,12 +126,12 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="container mx-auto px-4 py-16">
-        <h3 className="text-3xl md:text-4xl font-bold text-center mb-12">
+      <section id="features" className="container mx-auto px-4 py-16 relative z-10">
+        <h3 className="text-3xl md:text-4xl font-bold text-center mb-12 animate-fade-in">
           Features That Care
         </h3>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="border-2 hover:shadow-card transition-all duration-300">
+          <Card className="border-2 hover:shadow-glow hover:border-primary/50 transition-all duration-300 hover:scale-105 bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <MessageSquare className="w-12 h-12 mb-4 text-primary" />
               <CardTitle>AI Companion</CardTitle>
@@ -120,7 +141,7 @@ export default function Landing() {
             </CardHeader>
           </Card>
 
-          <Card className="border-2 hover:shadow-card transition-all duration-300">
+          <Card className="border-2 hover:shadow-glow hover:border-primary/50 transition-all duration-300 hover:scale-105 bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <Brain className="w-12 h-12 mb-4 text-primary" />
               <CardTitle>Sentiment Analysis</CardTitle>
@@ -130,7 +151,7 @@ export default function Landing() {
             </CardHeader>
           </Card>
 
-          <Card className="border-2 hover:shadow-card transition-all duration-300">
+          <Card className="border-2 hover:shadow-glow hover:border-primary/50 transition-all duration-300 hover:scale-105 bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <Sparkles className="w-12 h-12 mb-4 text-primary" />
               <CardTitle>Personalized Interventions</CardTitle>
@@ -140,7 +161,7 @@ export default function Landing() {
             </CardHeader>
           </Card>
 
-          <Card className="border-2 hover:shadow-card transition-all duration-300">
+          <Card className="border-2 hover:shadow-glow hover:border-primary/50 transition-all duration-300 hover:scale-105 bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <TrendingUp className="w-12 h-12 mb-4 text-primary" />
               <CardTitle>Mood Tracking</CardTitle>
@@ -150,7 +171,7 @@ export default function Landing() {
             </CardHeader>
           </Card>
 
-          <Card className="border-2 hover:shadow-card transition-all duration-300">
+          <Card className="border-2 hover:shadow-glow hover:border-primary/50 transition-all duration-300 hover:scale-105 bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <Shield className="w-12 h-12 mb-4 text-primary" />
               <CardTitle>Privacy First</CardTitle>
@@ -160,7 +181,7 @@ export default function Landing() {
             </CardHeader>
           </Card>
 
-          <Card className="border-2 hover:shadow-card transition-all duration-300">
+          <Card className="border-2 hover:shadow-glow hover:border-primary/50 transition-all duration-300 hover:scale-105 bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <Heart className="w-12 h-12 mb-4 text-primary" />
               <CardTitle>24/7 Support</CardTitle>
@@ -173,7 +194,7 @@ export default function Landing() {
       </section>
 
       {/* About Section */}
-      <section className="container mx-auto px-4 py-16 bg-card/30 rounded-3xl my-16">
+      <section className="container mx-auto px-4 py-16 bg-card/50 backdrop-blur-sm rounded-3xl my-16 relative z-10 shadow-card">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <h3 className="text-3xl md:text-4xl font-bold">About The Silent Stress</h3>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -191,8 +212,8 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
-        <Card className="border-2 shadow-card max-w-2xl mx-auto">
+      <section className="container mx-auto px-4 py-16 text-center relative z-10">
+        <Card className="border-2 shadow-glow max-w-2xl mx-auto bg-card/80 backdrop-blur-sm hover:shadow-card transition-all">
           <CardHeader>
             <CardTitle className="text-2xl md:text-3xl">
               Ready to Begin Your Wellness Journey?
@@ -208,7 +229,7 @@ export default function Landing() {
                 setAuthMode("signup");
                 setShowAuth(true);
               }}
-              className="shadow-soft text-lg px-8"
+              className="shadow-glow bg-gradient-calm hover:shadow-card transition-all text-lg px-8 hover:scale-105"
             >
               Get Started Free
             </Button>

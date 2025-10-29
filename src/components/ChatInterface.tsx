@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Send, Loader2, Heart, Volume2, VolumeX } from "lucide-react";
+import { Send, Loader2, Heart, Volume2, VolumeX, Bot } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
@@ -164,19 +164,6 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
     }
   };
 
-  const getSentimentColor = (label?: string) => {
-    switch (label) {
-      case "positive":
-        return "bg-positive/20 border-positive";
-      case "negative":
-        return "bg-warning/20 border-warning";
-      case "distress":
-        return "bg-distress/20 border-distress";
-      default:
-        return "bg-card border-border";
-    }
-  };
-
   if (loadingMessages) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -204,10 +191,15 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
               className={`p-4 ${
                 message.role === "user"
                   ? "ml-auto max-w-[80%] bg-primary text-primary-foreground"
-                  : `mr-auto max-w-[80%] ${getSentimentColor(message.sentiment_label)}`
+                  : "mr-auto max-w-[80%] bg-card"
               } shadow-card border transition-all duration-300`}
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-3">
+                {message.role === "assistant" && (
+                  <div className="w-8 h-8 rounded-full bg-gradient-calm flex items-center justify-center flex-shrink-0">
+                    <Bot className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                )}
                 <p className="whitespace-pre-wrap leading-relaxed flex-1">{message.content}</p>
                 {message.role === "assistant" && (
                   <Button
