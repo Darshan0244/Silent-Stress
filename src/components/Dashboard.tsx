@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Heart, LogOut, Plus, MessageSquare, Menu, Pencil, Check, Volume2, VolumeX, FileText, Loader2 } from "lucide-react";
+import { Heart, LogOut, Plus, MessageSquare, Menu, Pencil, Check, Volume2, VolumeX, FileText, Loader2, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import ChatInterface from "./ChatInterface";
@@ -124,6 +124,35 @@ export default function Dashboard() {
     }
   };
 
+  const deleteConversation = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setConversations((prev) => prev.filter((conv) => conv.id !== id));
+      
+      if (currentConversation === id) {
+        const remaining = conversations.filter((conv) => conv.id !== id);
+        setCurrentConversation(remaining.length > 0 ? remaining[0].id : null);
+      }
+      
+      toast({
+        title: "Deleted",
+        description: "Conversation deleted",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to delete conversation",
+        variant: "destructive",
+      });
+    }
+  };
+
   const generateSummary = async () => {
     if (!currentConversation) return;
     
@@ -229,18 +258,31 @@ export default function Dashboard() {
                   >
                     <MessageSquare className="w-4 h-4 mr-2 flex-shrink-0" />
                     <span className="truncate flex-1 text-left">{conv.title}</span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingId(conv.id);
-                        setEditTitle(conv.title);
-                      }}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingId(conv.id);
+                          setEditTitle(conv.title);
+                        }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteConversation(conv.id);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </Button>
                 )}
               </div>
@@ -290,7 +332,7 @@ export default function Dashboard() {
           {currentConversation ? (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Chat Header - Always Visible */}
-              <div className="border-b bg-card/50 backdrop-blur-sm p-3 flex justify-between items-center flex-shrink-0 z-10">
+              <div className="sticky top-0 border-b bg-card/95 backdrop-blur-sm p-3 flex justify-between items-center flex-shrink-0 z-20">
                 <h2 className="font-semibold truncate">
                   {conversations.find((c) => c.id === currentConversation)?.title}
                 </h2>

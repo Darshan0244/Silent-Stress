@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId } = await req.json();
+    const { messages, conversationId, image } = await req.json();
     console.log('Received chat request for conversation:', conversationId);
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -46,6 +46,18 @@ After each user message, internally assess:
 
 Remember: You're a supportive friend who truly listens, not a therapist. Your goal is to provide comfort and guide users toward helpful resources.`;
 
+    // Prepare messages with image if provided
+    const chatMessages = messages.map((msg: any) => ({ ...msg }));
+    if (image) {
+      const lastMessage = chatMessages[chatMessages.length - 1];
+      if (lastMessage && lastMessage.role === "user") {
+        lastMessage.content = [
+          { type: "text", text: lastMessage.content },
+          { type: "image_url", image_url: { url: image } }
+        ];
+      }
+    }
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -56,7 +68,7 @@ Remember: You're a supportive friend who truly listens, not a therapist. Your go
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          ...messages
+          ...chatMessages
         ],
         temperature: 0.8,
         max_tokens: 800,

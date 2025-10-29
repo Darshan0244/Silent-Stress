@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Send, Loader2, Heart, Volume2, VolumeX, Bot } from "lucide-react";
+import { Send, Loader2, Heart, Volume2, VolumeX, Bot, Image as ImageIcon, Mic, MicOff } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
@@ -26,12 +26,45 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { speak, stop, isSpeaking } = useTextToSpeech();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadMessages();
+    // Initialize speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      recognitionInstance.continuous = false;
+      recognitionInstance.interimResults = false;
+      recognitionInstance.lang = 'en-US';
+      
+      recognitionInstance.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(prev => prev + ' ' + transcript);
+        setIsRecording(false);
+      };
+      
+      recognitionInstance.onerror = () => {
+        setIsRecording(false);
+        toast({
+          title: "Error",
+          description: "Speech recognition failed",
+          variant: "destructive",
+        });
+      };
+      
+      recognitionInstance.onend = () => {
+        setIsRecording(false);
+      };
+      
+      setRecognition(recognitionInstance);
+    }
   }, [conversationId]);
 
   useEffect(() => {
@@ -66,11 +99,56 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
     }
   };
 
+  const toggleRecording = () => {
+    if (!recognition) {
+      toast({
+        title: "Not supported",
+        description: "Speech recognition is not supported in your browser",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (isRecording) {
+      recognition.stop();
+      setIsRecording(false);
+    } else {
+      recognition.start();
+      setIsRecording(true);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image under 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      setSelectedImage(file);
+    }
+  };
+
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+    if ((!input.trim() && !selectedImage) || loading) return;
 
     const userMessage = input.trim();
+    let imageBase64 = "";
+    
+    if (selectedImage) {
+      const reader = new FileReader();
+      imageBase64 = await new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(selectedImage);
+      });
+    }
+    
     setInput("");
+    setSelectedImage(null);
     setLoading(true);
 
     try {
@@ -99,6 +177,7 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
               { role: "user", content: userMessage },
             ],
             conversationId,
+            image: imageBase64 || undefined,
           },
         }
       );
@@ -229,32 +308,78 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
       </ScrollArea>
 
       <div className="border-t bg-background/95 backdrop-blur-sm p-4">
-        <div className="max-w-3xl mx-auto flex gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder="Type your message... (Press Enter to send)"
-            disabled={loading}
-            className="min-h-[60px] resize-none"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={loading || !input.trim()}
-            size="icon"
-            className="h-[60px] w-[60px] shadow-soft"
-          >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </Button>
+        <div className="max-w-3xl mx-auto">
+          {selectedImage && (
+            <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+              <ImageIcon className="w-4 h-4" />
+              <span>{selectedImage.name}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedImage(null)}
+              >
+                Remove
+              </Button>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <div className="flex gap-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                className="h-[60px] w-[60px]"
+              >
+                <ImageIcon className="w-5 h-5" />
+              </Button>
+              <Button
+                variant={isRecording ? "destructive" : "outline"}
+                size="icon"
+                onClick={toggleRecording}
+                disabled={loading}
+                className="h-[60px] w-[60px]"
+              >
+                {isRecording ? (
+                  <MicOff className="w-5 h-5" />
+                ) : (
+                  <Mic className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Type your message... (Press Enter to send)"
+              disabled={loading}
+              className="min-h-[60px] resize-none"
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={loading || (!input.trim() && !selectedImage)}
+              size="icon"
+              className="h-[60px] w-[60px] shadow-soft"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

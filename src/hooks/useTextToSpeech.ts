@@ -42,13 +42,16 @@ export function useTextToSpeech() {
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => {
+    utterance.onerror = (event) => {
       setIsSpeaking(false);
-      toast({
-        title: "Speech error",
-        description: "Failed to play text-to-speech",
-        variant: "destructive",
-      });
+      // Only show error if it's not a cancellation
+      if (event.error !== 'canceled' && event.error !== 'interrupted') {
+        toast({
+          title: "Speech error",
+          description: "Failed to play text-to-speech",
+          variant: "destructive",
+        });
+      }
     };
 
     window.speechSynthesis.speak(utterance);
