@@ -1,13 +1,17 @@
-# The Silent Stress
+# The Silent Stress 🤖
 
 AI-powered emotional wellness companion built with Vite + React + TypeScript, TailwindCSS, and shadcn/ui. Uses Supabase for auth, data, and edge functions.
 
 
-## Overview
+## Overview 🚀
 
 The Silent Stress is an AI-powered emotional wellness companion that helps users reflect, feel heard, and build healthier habits. It combines an empathetic chat experience, gentle guardrails, mood logging, and gamified micro-activities to support day-to-day wellbeing.
 
-## Features
+##  Flow Diagram ‼️
+
+![Screenshot of Stress Website](./StressWebsite.png)
+
+## Features 💫
 
 - **AI companion chat** with image input and on-page formatting
 - **Text-to-speech playback** for assistant responses
@@ -18,7 +22,7 @@ The Silent Stress is an AI-powered emotional wellness companion that helps users
 - **Anxiety relief** page with breathing patterns and ambient sounds (Forest, Ocean, Garden)
 - **Responsive UI** with a landing page, theme switcher, and polished components
 
-## Tech Stack
+## Tech Stack ⚙️
 
 - React 18 + TypeScript + Vite (port 8080)
 - TailwindCSS + shadcn/ui + Radix primitives
@@ -183,7 +187,7 @@ supabase secrets set LOVABLE_API_KEY=your_api_key
 
 The client invokes it via `supabase.functions.invoke("emotional-chat", { body: { ... } })`.
 
-## Local Development
+## Local Development ‼️
 
 ```bash
 npm install
