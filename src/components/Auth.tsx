@@ -93,7 +93,7 @@ export default function Auth({ initialMode = "signin" }: AuthProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute right-0 top-0 h-11 w-11 hover:bg-transparent"
+                className="absolute right-0 top-1/2 -translate-y-1/2 h-11 w-11 hover:bg-transparent"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (

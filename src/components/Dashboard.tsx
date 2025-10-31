@@ -1,14 +1,25 @@
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Heart, LogOut, Plus, MessageSquare, Menu, Pencil, Check, Volume2, VolumeX, FileText, Loader2, Trash2 } from "lucide-react";
+import { Heart, LogOut, Plus, MessageSquare, Menu, Pencil, Check, Trash2, Bot, Trophy } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import ChatInterface from "./ChatInterface";
-import Footer from "./Footer";
+import { recordConversation } from "@/lib/gamification";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Conversation {
   id: string;
@@ -25,7 +36,8 @@ export default function Dashboard() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { toast } = useToast();
-  const { speak, stop, isSpeaking } = useTextToSpeech();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     loadConversations();
@@ -43,6 +55,7 @@ export default function Dashboard() {
       
       if (data && data.length > 0) {
         setCurrentConversation(data[0].id);
+        recordConversation();
       }
     } catch (error: any) {
       console.error("Error loading conversations:", error);
@@ -74,6 +87,7 @@ export default function Dashboard() {
       
       setConversations((prev) => [data as Conversation, ...prev]);
       setCurrentConversation(data.id);
+      recordConversation();
       
       toast({
         title: "New conversation",
@@ -133,12 +147,13 @@ export default function Dashboard() {
 
       if (error) throw error;
 
-      setConversations((prev) => prev.filter((conv) => conv.id !== id));
-      
-      if (currentConversation === id) {
-        const remaining = conversations.filter((conv) => conv.id !== id);
-        setCurrentConversation(remaining.length > 0 ? remaining[0].id : null);
-      }
+      setConversations((prev) => {
+        const remaining = prev.filter((conv) => conv.id !== id);
+        if (currentConversation === id) {
+          setCurrentConversation(remaining.length > 0 ? remaining[0].id : null);
+        }
+        return remaining;
+      });
       
       toast({
         title: "Deleted",
@@ -153,48 +168,7 @@ export default function Dashboard() {
     }
   };
 
-  const generateSummary = async () => {
-    if (!currentConversation) return;
-    
-    setSummaryLoading(true);
-    try {
-      const { data: messages } = await supabase
-        .from("messages")
-        .select("role, content")
-        .eq("conversation_id", currentConversation)
-        .order("created_at");
-
-      if (!messages || messages.length === 0) {
-        toast({
-          title: "No messages",
-          description: "Start a conversation first",
-        });
-        return;
-      }
-
-      const conversationText = messages
-        .map((m) => `${m.role}: ${m.content}`)
-        .join("\n");
-
-      const summary = `This conversation covered: ${messages.length} messages. Key themes discussed include emotional wellness and personal reflections.`;
-
-      speak(summary);
-      
-      toast({
-        title: "Summary",
-        description: summary,
-        duration: 8000,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to generate summary",
-        variant: "destructive",
-      });
-    } finally {
-      setSummaryLoading(false);
-    }
-  };
+  // Summary feature removed per request
 
   const SidebarContent = () => (
     <>
@@ -209,6 +183,7 @@ export default function Dashboard() {
           </div>
         </div>
         <Button onClick={createNewConversation} className="w-full shadow-soft">
+          <MessageSquare className="w-4 h-4 mr-1" />
           <Plus className="w-4 h-4 mr-2" />
           New Conversation
         </Button>
@@ -248,12 +223,19 @@ export default function Dashboard() {
                     </Button>
                   </div>
                 ) : (
-                  <Button
-                    variant={currentConversation === conv.id ? "secondary" : "ghost"}
-                    className="w-full justify-start group"
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className={`w-full justify-start group inline-flex items-center px-3 py-2 rounded-md ${currentConversation === conv.id ? "bg-secondary" : "hover:bg-accent"}`}
                     onClick={() => {
                       setCurrentConversation(conv.id);
                       setMobileMenuOpen(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        setCurrentConversation(conv.id);
+                        setMobileMenuOpen(false);
+                      }
                     }}
                   >
                     <MessageSquare className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -271,19 +253,37 @@ export default function Dashboard() {
                       >
                         <Pencil className="h-3 w-3" />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteConversation(conv.id);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(conv.id);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the selected conversation and its messages.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => confirmDeleteId && deleteConversation(confirmDeleteId)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
-                  </Button>
+                  </div>
                 )}
               </div>
             ))}
@@ -329,39 +329,35 @@ export default function Dashboard() {
         </div>
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {currentConversation ? (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Chat Header - Always Visible */}
-              <div className="sticky top-0 border-b bg-card/95 backdrop-blur-sm p-3 flex justify-between items-center flex-shrink-0 z-20">
-                <h2 className="font-semibold truncate">
-                  {conversations.find((c) => c.id === currentConversation)?.title}
-                </h2>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={generateSummary}
-                    disabled={summaryLoading}
-                  >
-                    {summaryLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isSpeaking ? (
-                      <VolumeX className="w-4 h-4" />
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4 mr-2" />
-                        <span className="hidden sm:inline">Summary</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <ChatInterface conversationId={currentConversation} />
+          {/* Chat/Header - Always Visible */}
+          <div className="sticky top-0 border-b bg-card/95 backdrop-blur-sm p-3 flex justify-between items-center flex-shrink-0 z-20">
+            <h2 className="font-semibold truncate">
+              {currentConversation
+                ? conversations.find((c) => c.id === currentConversation)?.title
+                : "Silent Stress"}
+            </h2>
+            <div className="flex gap-2">
+              <Link to="/anxiety">
+                <Button size="sm" className="relative border-2 border-primary/60 hover:border-primary shadow-none transition-all">
+                  <span className="absolute -inset-0.5 rounded-md pointer-events-none shadow-[0_0_12px_2px_rgba(147,51,234,0.5)]" />
+                  <span className="relative inline-flex items-center gap-2">✨ Activities</span>
+                </Button>
+              </Link>
+              <Link to="/gamification">
+                <Button size="sm" variant="secondary" className="relative border-2 border-emerald-500/60 hover:border-emerald-500 shadow-none transition-all">
+                  <span className="absolute -inset-0.5 rounded-md pointer-events-none shadow-[0_0_12px_2px_rgba(16,185,129,0.45)]" />
+                  <span className="relative inline-flex items-center gap-2"><Trophy className="w-4 h-4" /> Rewards</span>
+                </Button>
+              </Link>
             </div>
+          </div>
+
+          {currentConversation ? (
+            <ChatInterface conversationId={currentConversation} refreshToken={refreshToken} />
           ) : (
             <div className="flex-1 flex items-center justify-center p-4">
               <div className="text-center max-w-md">
-                <Heart className="w-16 h-16 mx-auto mb-4 text-primary" />
+                <Bot className="w-16 h-16 mx-auto mb-4 text-primary" />
                 <h2 className="text-2xl font-bold mb-2">Welcome to The Silent Stress</h2>
                 <p className="text-muted-foreground mb-6">
                   Your personal emotional wellness companion. Start a new conversation to begin.
@@ -374,13 +370,6 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </div>
-      
-      <div className="hidden lg:block">
-        <Footer />
-      </div>
-      <div className="lg:hidden">
-        <Footer />
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { Heart, MessageSquare, TrendingUp, Shield, Sparkles, Brain, Moon, Sun } 
 import { useTheme } from "next-themes";
 import Auth from "./Auth";
 import Footer from "./Footer";
+import { Link } from "react-router-dom";
 
 export default function Landing() {
   const [showAuth, setShowAuth] = useState(false);
@@ -26,7 +27,6 @@ export default function Landing() {
             <Auth initialMode={authMode} />
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -40,15 +40,29 @@ export default function Landing() {
       </div>
       
       {/* Hero Section */}
-      <header className="border-b bg-card/50 backdrop-blur-md sticky top-0 z-50 shadow-soft">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <header className="border-b bg-card/70 backdrop-blur-md fixed top-0 left-0 right-0 z-50 shadow-soft">
+        <div className="container mx-auto px-4 py-3 md:py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-gradient-calm flex items-center justify-center shadow-glow">
               <Heart className="w-5 h-5 text-primary-foreground" />
             </div>
             <h1 className="text-xl font-bold">The Silent Stress</h1>
           </div>
-          <div className="flex gap-2 items-center">
+          <nav className="flex gap-2 items-center">
+            <Button
+              variant="ghost"
+              className="hidden md:inline-flex"
+              onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              Features
+            </Button>
+            <Button
+              variant="ghost"
+              className="hidden md:inline-flex"
+              onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              About
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -62,16 +76,6 @@ export default function Landing() {
               )}
             </Button>
             <Button
-              variant="ghost"
-              onClick={() => {
-                setAuthMode("signin");
-                setShowAuth(true);
-              }}
-              className="hidden sm:inline-flex"
-            >
-              Sign In
-            </Button>
-            <Button
               onClick={() => {
                 setAuthMode("signup");
                 setShowAuth(true);
@@ -80,14 +84,14 @@ export default function Landing() {
             >
               Get Started
             </Button>
-          </div>
+          </nav>
         </div>
       </header>
 
       {/* Hero Content */}
-      <section className="container mx-auto px-4 py-16 md:py-24 text-center relative z-10">
+      <section className="container mx-auto px-4 py-16 md:py-24 text-center relative z-10 mt-16">
         <div className="max-w-3xl mx-auto space-y-6">
-          <h2 className="text-4xl md:text-6xl font-bold leading-tight animate-fade-in">
+          <h2 className="text-4xl md:text-7xl font-bold leading-tight animate-fade-in">
             Your AI-Powered
             <br />
             <span className="bg-gradient-calm bg-clip-text text-transparent drop-shadow-glow">
@@ -194,7 +198,7 @@ export default function Landing() {
       </section>
 
       {/* About Section */}
-      <section className="container mx-auto px-4 py-16 bg-card/50 backdrop-blur-sm rounded-3xl my-16 relative z-10 shadow-card">
+      <section id="about" className="container mx-auto px-4 py-16 bg-card/50 backdrop-blur-sm rounded-3xl my-16 relative z-10 shadow-card">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <h3 className="text-3xl md:text-4xl font-bold">About The Silent Stress</h3>
           <p className="text-lg text-muted-foreground leading-relaxed">

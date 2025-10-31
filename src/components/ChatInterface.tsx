@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Send, Loader2, Heart, Volume2, VolumeX, Bot, Image as ImageIcon, Mic, MicOff } from "lucide-react";
+import { Send, Loader2, Volume2, VolumeX, Bot, Image as ImageIcon, User as UserIcon, Sparkles } from "lucide-react";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
@@ -19,16 +21,16 @@ interface Message {
 
 interface ChatInterfaceProps {
   conversationId: string;
+  refreshToken?: number;
 }
 
-export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
+export default function ChatInterface({ conversationId, refreshToken }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  // Speech recognition removed per request
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { speak, stop, isSpeaking } = useTextToSpeech();
@@ -36,36 +38,13 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
 
   useEffect(() => {
     loadMessages();
-    // Initialize speech recognition
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = 'en-US';
-      
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(prev => prev + ' ' + transcript);
-        setIsRecording(false);
-      };
-      
-      recognitionInstance.onerror = () => {
-        setIsRecording(false);
-        toast({
-          title: "Error",
-          description: "Speech recognition failed",
-          variant: "destructive",
-        });
-      };
-      
-      recognitionInstance.onend = () => {
-        setIsRecording(false);
-      };
-      
-      setRecognition(recognitionInstance);
-    }
   }, [conversationId]);
+
+  useEffect(() => {
+    if (refreshToken !== undefined) {
+      loadMessages();
+    }
+  }, [refreshToken]);
 
   useEffect(() => {
     scrollToBottom();
@@ -99,24 +78,7 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
     }
   };
 
-  const toggleRecording = () => {
-    if (!recognition) {
-      toast({
-        title: "Not supported",
-        description: "Speech recognition is not supported in your browser",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (isRecording) {
-      recognition.stop();
-      setIsRecording(false);
-    } else {
-      recognition.start();
-      setIsRecording(true);
-    }
-  };
+  // Speech recognition removed per request
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -131,6 +93,34 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
       }
       setSelectedImage(file);
     }
+  };
+
+  const sanitizeResponse = (userText: string, aiText: string) => {
+    const bannedPatterns = [/^\s*sentiment\b/i, /^\s*emotional labels?\b/i, /^\s*key triggers?\b/i, /^\s*suggested interventions?\b/i, /^\s*sentiment score\b/i];
+    const lines = aiText.split(/\r?\n/).filter((line) => !bannedPatterns.some((re) => re.test(line)));
+    let cleaned = lines.join("\n").trim();
+    if (!cleaned || /^(sentiment|emotional labels|key triggers)/i.test(aiText)) {
+      cleaned = "Let’s focus on your wellbeing. Would you like a quick breathing exercise, a short mindfulness prompt, or calming sounds (forest, ocean, garden)?";
+    }
+    return cleaned;
+  };
+
+  // Safely format assistant content: bullets and bold
+  const formatContent = (text: string) => {
+    // Escape HTML
+    const escaped = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    // Replace leading '*' bullets with '-'
+    const bulletFixed = escaped
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^\s*\*/g, "-"))
+      .join("\n");
+    // Bold **text**
+    const bolded = bulletFixed.replace(/\*\*(.*?)\*\*/g, "<strong>$1<\/strong>");
+    // Convert newlines to <br>
+    return bolded.replace(/\n/g, "<br>");
   };
 
   const sendMessage = async () => {
@@ -187,12 +177,13 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
       const { message: aiResponse, sentiment } = functionData;
 
       // Save AI message with sentiment
+      const safeContent = sanitizeResponse(userMessage, aiResponse);
       const { data: aiMessage, error: aiError } = await supabase
         .from("messages")
         .insert({
           conversation_id: conversationId,
           role: "assistant",
-          content: aiResponse,
+          content: safeContent,
         })
         .select()
         .single();
@@ -257,11 +248,27 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
         <div className="space-y-4 max-w-3xl mx-auto">
           {messages.length === 0 && (
             <div className="text-center py-12">
-              <Heart className="w-12 h-12 mx-auto mb-4 text-primary" />
-              <h3 className="text-lg font-semibold mb-2">Start a conversation</h3>
-              <p className="text-muted-foreground">
-                Share what's on your mind. I'm here to listen.
-              </p>
+              <div className="w-14 h-14 rounded-full mx-auto mb-4 bg-gradient-calm flex items-center justify-center">
+                <Bot className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-1">AI Therapist</h3>
+              <p className="text-muted-foreground mb-6">How can I assist you today?</p>
+              <div className="space-y-2 max-w-xl mx-auto">
+                {[
+                  "How can I manage my anxiety better?",
+                  "I've been feeling overwhelmed lately",
+                  "Can we talk about improving sleep?",
+                  "I need help with work-life balance",
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setInput(q)}
+                    className="w-full text-left px-4 py-3 rounded-md bg-card/60 hover:bg-accent border transition"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {messages.map((message) => (
@@ -279,7 +286,19 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
                     <Bot className="h-4 w-4 text-primary-foreground" />
                   </div>
                 )}
-                <p className="whitespace-pre-wrap leading-relaxed flex-1">{message.content}</p>
+                {message.role === "user" && (
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="h-4 w-4" />
+                  </div>
+                )}
+                {message.role === "assistant" ? (
+                  <div
+                    className="leading-relaxed flex-1"
+                    dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap leading-relaxed flex-1">{message.content}</p>
+                )}
                 {message.role === "assistant" && (
                   <Button
                     variant="ghost"
@@ -336,22 +355,9 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
-                className="h-[60px] w-[60px]"
+                className="h-[68px] w-[68px] border hover:border-purple-500 hover:text-purple-500"
               >
-                <ImageIcon className="w-5 h-5" />
-              </Button>
-              <Button
-                variant={isRecording ? "destructive" : "outline"}
-                size="icon"
-                onClick={toggleRecording}
-                disabled={loading}
-                className="h-[60px] w-[60px]"
-              >
-                {isRecording ? (
-                  <MicOff className="w-5 h-5" />
-                ) : (
-                  <Mic className="w-5 h-5" />
-                )}
+                <ImageIcon className="w-10 h-10" />
               </Button>
             </div>
             <Textarea
@@ -371,12 +377,12 @@ export default function ChatInterface({ conversationId }: ChatInterfaceProps) {
               onClick={sendMessage}
               disabled={loading || (!input.trim() && !selectedImage)}
               size="icon"
-              className="h-[60px] w-[60px] shadow-soft"
+              className="h-[68px] w-[68px] shadow-soft"
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
-                <Send className="w-5 h-5" />
+                <Send className="w-6 h-6" />
               )}
             </Button>
           </div>
