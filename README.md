@@ -2,25 +2,6 @@
 
 AI-powered emotional wellness companion built with Vite + React + TypeScript, TailwindCSS, and shadcn/ui. Uses Supabase for auth, data, and edge functions.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-- [Prerequisites](#prerequisites)
-- [Environment Variables](#environment-variables)
-- [Supabase Setup](#supabase-setup)
-- [Edge Function: emotional-chat](#edge-function-emotional-chat)
-- [Local Development](#local-development)
-- [Public Assets (Sounds)](#public-assets-sounds)
-- [Usage Guide](#usage-guide)
-- [Accessibility & Browser Support](#accessibility--browser-support)
-- [Security & Privacy](#security--privacy)
-- [Troubleshooting](#troubleshooting)
-- [Scripts](#scripts)
-- [License](#license)
 
 ## Overview
 
@@ -266,5 +247,4 @@ Routes:
 - `npm run dev` start dev server
 - `npm run build` production build
 - `npm run preview` preview production build
-
 
